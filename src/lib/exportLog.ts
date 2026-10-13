@@ -3,11 +3,7 @@
 import { useSyncExternalStore } from "react";
 import type { ExportRecord } from "./types";
 
-/**
- * Phase 1 keeps the export log in this browser. Phase 2 replaces `readLog` /
- * `appendExport` with calls that write per GHL sub-account on the server;
- * callers only depend on the ExportRecord shape.
- */
+/** Export log stored in this browser. Callers only depend on the ExportRecord shape. */
 const KEY = "agentmatch.exportLog.v1";
 const MAX_RECORDS = 500;
 const EMPTY: ExportRecord[] = [];

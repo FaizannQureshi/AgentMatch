@@ -5,7 +5,7 @@ import { downloadCsv } from "@/lib/agents";
 import { logToCsv, useExportLog } from "@/lib/exportLog";
 import { CloseIcon } from "./Icons";
 
-const FORMAT_LABEL = { ghl: "GHL import-ready", full: "Full vendor data" } as const;
+const FORMAT_LABEL = { ghl: "CRM contact CSV", full: "Full vendor data" } as const;
 
 function formatWhen(iso: string, now: number) {
   const d = new Date(iso);
@@ -117,7 +117,7 @@ export default function HistoryDrawer({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="border-t border-soft px-6 py-4 text-[12.5px] leading-relaxed text-muted">
-          Saved in this browser for now. In Phase 2 every HighLevel sub-account gets its own server-side log.
+          Saved in this browser on this device.
         </div>
       </aside>
     </div>

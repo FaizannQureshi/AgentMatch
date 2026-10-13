@@ -191,12 +191,12 @@ export default function ExportDialog({
                 <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-labelledby="fmt">
                   <FormatCard
                     active={options.format === "ghl"}
-                    title="GHL import-ready"
+                    title="CRM contact CSV"
                     badge="RECOMMENDED"
                     onClick={() => set("format", "ghl" as ExportFormat)}
                   >
-                    First Name, Last Name, Email, Phone, Tags. Maps straight into a HighLevel contact import. Names are
-                    cleaned to proper case.
+                    First Name, Last Name, Email, Phone, Tags. Ready for a standard CRM contact import. Names are cleaned
+                    to proper case.
                   </FormatCard>
                   <FormatCard
                     active={options.format === "full"}
@@ -214,7 +214,7 @@ export default function ExportDialog({
                   checked={options.skipSharedEmail}
                   onChange={(v) => set("skipSharedEmail", v)}
                   title="Skip shared team inboxes"
-                  hint={`${sharedTotal.toLocaleString()} in this export share an email with another agent (e.g. contracts@…), so GoHighLevel would merge them into one contact.`}
+                  hint={`${sharedTotal.toLocaleString()} in this export share an email with another agent (e.g. contracts@…), so a CRM may merge them into one contact.`}
                 />
                 <Option
                   checked={options.requirePhone}

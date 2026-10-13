@@ -138,15 +138,6 @@ export default function Header({
             </span>
           )}
         </button>
-        <button
-          type="button"
-          disabled
-          title="Direct import into a GoHighLevel sub-account ships in Phase 2"
-          className="hidden h-9 items-center gap-2 rounded-lg border border-dashed border-[#b9c6bf] bg-background px-3.5 text-[13px] font-semibold text-[#4a5a53] md:flex"
-        >
-          Connect GoHighLevel
-          <span className="rounded bg-[#e8eeea] px-1.5 py-0.5 text-[10.5px] tracking-wider">PHASE 2</span>
-        </button>
       </div>
     </header>
   );
