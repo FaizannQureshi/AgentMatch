@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useDeferredValue, useState } from "react";
 import { formatDate } from "@/lib/agents";
 import type { Agent, MapColorMode, Market } from "@/lib/types";
-import { CloseIcon, InfoIcon } from "./Icons";
+import { CloseIcon } from "./Icons";
 
 const AgentMap = dynamic(() => import("./AgentMap"), {
   ssr: false,
@@ -111,16 +111,7 @@ export default function MapPanel({
         </div>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-3 bottom-3 z-[500] flex flex-col-reverse items-stretch justify-between gap-3 sm:flex-row sm:items-end">
-        <div className={`${card} pointer-events-auto flex max-w-[320px] gap-2 px-3 py-2.5 text-xs leading-relaxed text-ink2`}>
-          <InfoIcon width={16} height={16} className="mt-px shrink-0 text-balanced" />
-          <span>
-            <b>Approximate positions.</b> The vendor file has no addresses yet, so pins are spread inside the dashed{" "}
-            {market.scopeLabel.toLowerCase()} area.{" "}
-            {agents.length > 0 && <>All {agents.length.toLocaleString()} matches are plotted.</>}
-          </span>
-        </div>
-
+      <div className="pointer-events-none absolute inset-x-3 bottom-3 z-[500] flex justify-end">
         {selected && (
           <div className="pointer-events-auto relative w-full rounded-[14px] bg-surface p-4 shadow-[0_8px_28px_rgba(16,32,26,0.22)] sm:w-[340px]">
             <div className="flex items-center gap-3">
