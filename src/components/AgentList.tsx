@@ -67,7 +67,7 @@ const AgentRow = memo(function AgentRow({
             {agent.sharedEmail && (
               <span
                 className="shrink-0 rounded bg-[var(--am-warn-bg)] px-1.5 py-px text-[10.5px] font-bold tracking-wide text-[var(--am-warn-ink)]"
-                title="Another agent in this market uses the same email. GoHighLevel would merge them into one contact."
+                title="Another agent in this market uses the same email. A CRM import may merge them into one contact."
               >
                 SHARED EMAIL
               </span>
@@ -172,7 +172,7 @@ export default function AgentList({
   }, []);
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex h-12 shrink-0 items-center gap-3 border-b border-soft bg-sunken px-5">
         <input
           ref={allRef}
@@ -206,7 +206,7 @@ export default function AgentList({
         </select>
       </div>
 
-      <div ref={scrollRef} className="am-scroll min-h-0 flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="am-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {agents.length === 0 ? (
           <div className="px-8 py-14 text-center">
             <p className="font-semibold">No agents match these filters</p>
@@ -233,6 +233,6 @@ export default function AgentList({
           </ul>
         )}
       </div>
-    </>
+    </div>
   );
 }

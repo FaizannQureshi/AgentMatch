@@ -1,14 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  activeFilters,
-  DEFAULT_FILTERS,
-  QUICK_SEGMENTS,
-  RECENCY_OPTIONS,
-  segmentActive,
-  segmentReset,
-} from "@/lib/agents";
+import { activeFilters, DEFAULT_FILTERS, RECENCY_OPTIONS } from "@/lib/agents";
 import type { AgentFilters, RecencyWindow, SideFocus } from "@/lib/types";
 import { ChevronDown, CloseIcon, SearchIcon, SlidersIcon } from "./Icons";
 
@@ -50,7 +43,6 @@ export default function FilterPanel({
   filters,
   onChange,
   onReset,
-  segmentCounts,
   matchCount,
   mobileOpen,
   desktopOpen,
@@ -59,7 +51,6 @@ export default function FilterPanel({
   filters: AgentFilters;
   onChange: (patch: Partial<AgentFilters>) => void;
   onReset: () => void;
-  segmentCounts: Record<string, number>;
   matchCount: number;
   mobileOpen: boolean;
   desktopOpen: boolean;
@@ -101,32 +92,8 @@ export default function FilterPanel({
         </button>
       </div>
 
-      <div className="flex gap-1.5 overflow-x-auto pb-0.5 lg:flex-wrap lg:overflow-visible lg:pb-0" role="group" aria-label="Quick filters">
-        {QUICK_SEGMENTS.map((seg) => {
-          const on = segmentActive(filters, seg);
-          return (
-            <button
-              key={seg.id}
-              type="button"
-              aria-pressed={on}
-              onClick={() => onChange(on ? segmentReset(seg) : seg.patch)}
-              className={`h-8 shrink-0 rounded-full border px-3 text-[12.5px] font-semibold transition ${
-                on
-                  ? "border-brand bg-brand text-white"
-                  : "border-field bg-surface text-ink2 hover:border-brand hover:text-brand"
-              }`}
-            >
-              {seg.label}
-              <span className={`ml-1.5 font-medium ${on ? "text-white/80" : "text-muted"}`}>
-                {(segmentCounts[seg.id] ?? 0).toLocaleString()}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
       <div
-        className={`${mobileOpen ? "flex" : "hidden"} ${desktopOpen ? "lg:flex" : "lg:hidden"} flex-col gap-3`}
+        className={`${mobileOpen ? "flex" : "hidden"} ${desktopOpen ? "lg:flex" : "lg:hidden"} am-scroll max-h-[min(42vh,360px)] flex-col gap-3 overflow-y-auto`}
       >
         <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
           <Field label="Transactions">

@@ -302,37 +302,7 @@ export function filterAgents(
   return sorted;
 }
 
-/* ───────────── quick segments + active chips ───────────── */
-
-export interface QuickSegment {
-  id: string;
-  label: string;
-  /** Filter values this segment sets. */
-  patch: Partial<AgentFilters>;
-}
-
-export const QUICK_SEGMENTS: QuickSegment[] = [
-  { id: "top", label: "5+ transactions", patch: { minTotal: 5 } },
-  { id: "recent", label: "Active 90 days", patch: { recency: "90" } },
-  { id: "sell", label: "Sell-heavy", patch: { sideFocus: "sell" } },
-  { id: "buy", label: "Buy-heavy", patch: { sideFocus: "buy" } },
-  { id: "phone", label: "Has phone", patch: { hasPhone: true } },
-  { id: "zips", label: "Multi-ZIP 3+", patch: { minZips: 3 } },
-];
-
-export function segmentActive(filters: AgentFilters, segment: QuickSegment): boolean {
-  return (Object.keys(segment.patch) as (keyof AgentFilters)[]).every(
-    (key) => filters[key] === segment.patch[key],
-  );
-}
-
-export function segmentReset(segment: QuickSegment): Partial<AgentFilters> {
-  const reset: Partial<AgentFilters> = {};
-  for (const key of Object.keys(segment.patch) as (keyof AgentFilters)[]) {
-    (reset as Record<string, unknown>)[key] = DEFAULT_FILTERS[key];
-  }
-  return reset;
-}
+/* ───────────── active filter chips ───────────── */
 
 const RECENCY_LABEL: Record<RecencyWindow, string> = {
   any: "Any time",

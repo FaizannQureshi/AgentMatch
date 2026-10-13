@@ -7,7 +7,6 @@ import {
   dataThrough,
   describeFilters,
   filterAgents,
-  QUICK_SEGMENTS,
   summarize,
 } from "@/lib/agents";
 import { useExportLog } from "@/lib/exportLog";
@@ -35,7 +34,7 @@ export default function AgentDirectory({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [desktopFiltersOpen, setDesktopFiltersOpen] = useState(true);
+  const [desktopFiltersOpen, setDesktopFiltersOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const exportLog = useExportLog();
@@ -46,14 +45,6 @@ export default function AgentDirectory({
 
   const filtered = useMemo(() => filterAgents(agents, filters, through), [agents, filters, through]);
   const stats = useMemo(() => summarize(filtered, through), [filtered, through]);
-
-  const segmentCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const seg of QUICK_SEGMENTS) {
-      counts[seg.id] = filterAgents(agents, { ...DEFAULT_FILTERS, ...seg.patch }, through).length;
-    }
-    return counts;
-  }, [agents, through]);
 
   const selected = useMemo(
     () => (selectedId ? (filtered.find((a) => a.id === selectedId) ?? null) : null),
@@ -166,7 +157,6 @@ export default function AgentDirectory({
             filters={filters}
             onChange={patchFilters}
             onReset={() => setFilters(DEFAULT_FILTERS)}
-            segmentCounts={segmentCounts}
             matchCount={filtered.length}
             mobileOpen={filtersOpen}
             desktopOpen={desktopFiltersOpen}
@@ -183,7 +173,7 @@ export default function AgentDirectory({
             onToggleAll={toggleAll}
           />
 
-          <div className="flex shrink-0 flex-col gap-2 bg-ink px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-white">
+          <div className="flex shrink-0 flex-col gap-2 border-t border-[#2a3c34] bg-ink px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-white">
             {selectedInView.length > 0 && (
               <div className="text-[13.5px]">
                 <b>{selectedInView.length.toLocaleString()} selected</b>{" "}
@@ -197,26 +187,16 @@ export default function AgentDirectory({
                 </button>
               </div>
             )}
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                disabled
-                title="Direct import into a GoHighLevel sub-account ships in Phase 2"
-                className="hidden h-[38px] flex-1 rounded-[9px] border border-[#3b4f46] px-3 text-[13px] font-semibold text-[#a9bbb2] sm:block"
-              >
-                Import to GHL · Phase 2
-              </button>
-              <button
-                type="button"
-                onClick={() => setExporting(true)}
-                disabled={exportSource.length === 0}
-                className="flex h-[38px] flex-1 items-center justify-center gap-2 rounded-[9px] bg-white px-4 text-[13.5px] font-bold text-brand-deep hover:bg-tint disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <DownloadIcon strokeWidth={2.4} />
-                {selectedInView.length > 0 ? "Export selected" : "Export all"}{" "}
-                {exportSource.length.toLocaleString()}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setExporting(true)}
+              disabled={exportSource.length === 0}
+              className="flex h-[38px] w-full items-center justify-center gap-2 rounded-[9px] bg-white px-4 text-[13.5px] font-bold text-brand-deep hover:bg-tint disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <DownloadIcon strokeWidth={2.4} />
+              {selectedInView.length > 0 ? "Export selected" : "Export all"}{" "}
+              {exportSource.length.toLocaleString()}
+            </button>
           </div>
         </section>
 
