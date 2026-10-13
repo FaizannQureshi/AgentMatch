@@ -2,18 +2,6 @@ import type { Market } from "./types";
 
 export const MARKETS: Market[] = [
   {
-    id: "tampa-citywide",
-    label: "Tampa · City-wide",
-    scopeLabel: "City-wide",
-    city: "Tampa",
-    state: "FL",
-    stateName: "Florida",
-    filename: "tampa_agents_city-wide.csv",
-    // Shifted east of downtown so the pin cloud sits on land, not in Tampa Bay.
-    center: [28.0, -82.43],
-    spreadKm: [14, 11],
-  },
-  {
     id: "tampa-33647",
     label: "Tampa · ZIP 33647",
     scopeLabel: "ZIP 33647",
@@ -25,9 +13,21 @@ export const MARKETS: Market[] = [
     center: [28.151887, -82.318179],
     spreadKm: [4.5, 4.5],
   },
+  {
+    id: "tampa-citywide",
+    label: "Tampa · City-wide",
+    scopeLabel: "City-wide",
+    city: "Tampa",
+    state: "FL",
+    stateName: "Florida",
+    filename: "tampa_agents_city-wide.csv",
+    // Shifted east of downtown so the pin cloud sits on land, not in Tampa Bay.
+    center: [28.0, -82.43],
+    spreadKm: [14, 11],
+  },
 ];
 
-export const DEFAULT_MARKET_ID = MARKETS[0].id;
+export const DEFAULT_MARKET_ID: Market["id"] = "tampa-33647";
 
 export function getMarket(id: string): Market {
   return MARKETS.find((m) => m.id === id) ?? MARKETS[0];
