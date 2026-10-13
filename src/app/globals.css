@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+:root {
+  --am-bg: #eef2f0;
+  --am-ink: #14231c;
+  --am-forest: #1b6b5a;
+  --am-forest-deep: #0f453a;
+  --am-teal: #2a9d8f;
+  --am-mint: #e6f4f0;
+  --am-border: #d7e0db;
+  --background: var(--am-bg);
+  --foreground: var(--am-ink);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.leaflet-container {
+  font: inherit;
+  z-index: 0;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(20, 35, 28, 0.12);
+}
