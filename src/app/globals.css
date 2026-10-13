@@ -1,13 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --am-bg: #eef2f0;
-  --am-ink: #14231c;
-  --am-forest: #1b6b5a;
-  --am-forest-deep: #0f453a;
-  --am-teal: #2a9d8f;
-  --am-mint: #e6f4f0;
-  --am-border: #d7e0db;
+  --am-bg: #f3f6f4;
+  --am-surface: #ffffff;
+  --am-sunken: #f7faf8;
+  --am-ink: #10201a;
+  --am-ink-2: #33443d;
+  --am-muted: #5b6b64;
+  --am-line: #dce4df;
+  --am-line-soft: #ecf1ee;
+  --am-field: #cbd6d0;
+  --am-brand: #0f5c4d;
+  --am-brand-deep: #0b4a3e;
+  --am-brand-tint: #e8f3ef;
+  --am-sell: #0f7b6c;
+  --am-buy: #2f5fd0;
+  --am-balanced: #c27d0e;
+  --am-warn-bg: #fbefd5;
+  --am-warn-ink: #7a4b00;
   --background: var(--am-bg);
   --foreground: var(--am-ink);
 }
@@ -15,21 +25,102 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--am-surface);
+  --color-sunken: var(--am-sunken);
+  --color-ink: var(--am-ink);
+  --color-ink2: var(--am-ink-2);
+  --color-muted: var(--am-muted);
+  --color-line: var(--am-line);
+  --color-soft: var(--am-line-soft);
+  --color-field: var(--am-field);
+  --color-brand: var(--am-brand);
+  --color-brand-deep: var(--am-brand-deep);
+  --color-tint: var(--am-brand-tint);
+  --color-sell: var(--am-sell);
+  --color-buy: var(--am-buy);
+  --color-balanced: var(--am-balanced);
   --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+button,
+select,
+input {
+  font: inherit;
+}
+
+button:not(:disabled),
+select {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--am-brand);
+  outline-offset: 2px;
+}
+
+.am-field {
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--am-field);
+  border-radius: 8px;
+  background: var(--am-surface);
+  font-size: 13.5px;
+  color: var(--am-ink);
+}
+.am-field:focus {
+  outline: 2px solid var(--am-brand);
+  outline-offset: -1px;
+  border-color: var(--am-brand);
+}
+
+.am-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #c3d0c9 transparent;
 }
 
 .leaflet-container {
   font: inherit;
   z-index: 0;
+  background: #eaf0ec;
 }
 
-.leaflet-popup-content-wrapper {
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(20, 35, 28, 0.12);
+.leaflet-tooltip.am-tip {
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  color: var(--am-ink);
+  box-shadow: 0 4px 14px rgba(16, 32, 26, 0.22);
+}
+.leaflet-tooltip.am-tip::before {
+  display: none;
+}
+
+.leaflet-control-zoom {
+  border: 0 !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(16, 32, 26, 0.18) !important;
+}
+.leaflet-control-zoom a {
+  width: 38px !important;
+  height: 38px !important;
+  line-height: 38px !important;
+  color: var(--am-ink) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
 }

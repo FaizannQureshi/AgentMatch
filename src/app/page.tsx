@@ -1,17 +1,13 @@
 import AgentDirectory from "@/components/AgentDirectory";
 import { loadAgentsForMarket } from "@/lib/loadAgents";
-import type { MarketId } from "@/lib/types";
+import { MARKETS } from "@/lib/markets";
+import type { Agent, MarketId } from "@/lib/types";
 
 export default async function Home() {
-  const marketIds: MarketId[] = ["tampa-33647", "tampa-citywide"];
   const loaded = await Promise.all(
-    marketIds.map(async (id) => [id, await loadAgentsForMarket(id)] as const),
+    MARKETS.map(async (m) => [m.id, await loadAgentsForMarket(m.id)] as const),
   );
-
-  const agentsByMarket = Object.fromEntries(loaded) as Record<
-    MarketId,
-    Awaited<ReturnType<typeof loadAgentsForMarket>>
-  >;
+  const agentsByMarket = Object.fromEntries(loaded) as Record<MarketId, Agent[]>;
 
   return <AgentDirectory agentsByMarket={agentsByMarket} />;
 }

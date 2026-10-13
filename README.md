@@ -4,11 +4,22 @@ Real estate agent directory for loan officers. Phase 1 prototype inspired by [Mo
 
 ## Phase 1 (this build)
 
-- Split UI: filters + agent list on the left, map on the right
-- Markets from vendor CSVs: Tampa `33647` and Tampa city-wide
-- Filters: search, min transactions, side focus, zips active, date ranges, sort
-- CSV export of filtered or selected agents
+- State → city → scope market picker (every export comes from one city in one state)
+- Split UI: summary stats, filters and agent list on the left, map on the right
+- Filters: search (name, email, phone, license), transaction range, last-transaction window, side focus (60/40 lean), ZIPs active, sell/buy minimums, date ranges, one-click quick segments, removable filter chips
+- Live stats strip for whatever is currently filtered
+- Map pins colored by side focus, volume or recency; click a pin or row to see the agent card
+- Export dialog: GHL import-ready CSV (First Name, Last Name, Email, Phone, Tags) or full vendor data; skips shared team inboxes and optionally agents without phones
+- Export history (city, state, filters, contact count), stored in this browser until Phase 2
 - No auth / no admin (public directory prototype)
+
+## Data cleaning
+
+Done in `src/lib/agents.ts` when the CSV is parsed:
+
+- Names are proper-cased and "PA"/"LLC" suffixes dropped. Accents damaged by the vendor's code-page mix-up are repaired (`D¡AZ` → `Díaz`).
+- Emails are lower-cased. Emails used by more than one agent are flagged "shared" because GoHighLevel would merge those contacts.
+- "Active in the last N days" counts back from the newest transaction in the file, not today's date.
 
 ## Phase 2 (planned)
 
@@ -21,7 +32,11 @@ Real estate agent directory for loan officers. Phase 1 prototype inspired by [Mo
 
 Phase 1 reads CSV files from `/data` at request time on the server. That keeps the prototype simple and avoids a database. Supabase + a Vercel cron can come later when the vendor feed is automated.
 
-Map pins are approximate: the CSV has no lat/lng, so agents are placed with a deterministic offset around each market centroid.
+Map pins are approximate: the CSV has no lat/lng, so agents get a stable pseudo-location inside a land-fitted ellipse per market (`spreadKm` in `src/lib/markets.ts`). Swap in real geocoding when the vendor feed has addresses.
+
+The basemap is Esri World Light Gray (no API key). Move to a keyed provider before heavy production traffic.
+
+Keep vendor CSVs out of `public/`: anything there is downloadable by URL, which would bypass the Phase 2 access control and export log.
 
 ## Local development
 
