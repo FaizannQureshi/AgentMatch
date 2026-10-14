@@ -8,7 +8,7 @@ import { ChevronDown, CloseIcon, SearchIcon, SlidersIcon } from "./Icons";
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-semibold text-[#4a5a53]">{label}</span>
+      <span className="mb-1 block text-xs font-semibold text-muted">{label}</span>
       {children}
     </label>
   );
@@ -175,7 +175,7 @@ export default function FilterPanel({
               type="button"
               onClick={() => onChange(chip.reset)}
               aria-label={`Remove filter: ${chip.label}`}
-              className="flex h-7 items-center gap-1 rounded-full bg-tint pl-2.5 pr-1.5 text-xs font-semibold text-brand-deep hover:bg-[#d7ebe4]"
+              className="flex h-7 items-center gap-1 rounded-full bg-tint pl-2.5 pr-1.5 text-xs font-semibold text-ink hover:brightness-95"
             >
               {chip.label}
               <CloseIcon width={12} height={12} strokeWidth={2.5} />

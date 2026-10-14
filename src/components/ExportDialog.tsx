@@ -35,7 +35,7 @@ function FormatCard({
       aria-checked={active}
       onClick={onClick}
       className={`rounded-xl p-3.5 text-left transition ${
-        active ? "border-2 border-brand bg-[#f2f9f6]" : "border border-field hover:border-brand"
+        active ? "border-2 border-brand bg-tint" : "border border-field hover:border-brand"
       }`}
     >
       <div className="flex items-center justify-between gap-2">
@@ -148,11 +148,11 @@ export default function ExportDialog({
               {doneCount === null ? `Export ${agents.length.toLocaleString()} ${plural(agents.length)}` : "Export complete"}
             </h2>
             <div className="mt-2 flex flex-wrap gap-1.5 text-[12.5px] font-semibold">
-              <span className="rounded-full bg-tint px-2.5 py-0.5 text-brand-deep">
+              <span className="rounded-full bg-tint px-2.5 py-0.5 text-ink">
                 {market.city}, {market.state}
               </span>
-              <span className="rounded-full bg-[#e8eeea] px-2.5 py-0.5 text-ink2">{market.scopeLabel}</span>
-              <span className="rounded-full bg-[#e8eeea] px-2.5 py-0.5 text-ink2">{scopeLabel}</span>
+              <span className="rounded-full bg-sunken px-2.5 py-0.5 text-ink2">{market.scopeLabel}</span>
+              <span className="rounded-full bg-sunken px-2.5 py-0.5 text-ink2">{scopeLabel}</span>
             </div>
           </div>
           <button

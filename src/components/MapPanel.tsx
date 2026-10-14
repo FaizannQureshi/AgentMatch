@@ -9,7 +9,7 @@ import { CloseIcon } from "./Icons";
 const AgentMap = dynamic(() => import("./AgentMap"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full items-center justify-center bg-[#eaf0ec] text-sm text-muted">Loading map…</div>
+    <div className="flex h-full items-center justify-center bg-[#f0f0f0] text-sm text-muted">Loading map…</div>
   ),
 });
 
@@ -21,22 +21,22 @@ const MODES: { id: MapColorMode; label: string }[] = [
 
 const LEGENDS: Record<MapColorMode, { color: string; label: string }[]> = {
   side: [
-    { color: "#0f7b6c", label: "Sell-heavy" },
-    { color: "#2f5fd0", label: "Buy-heavy" },
-    { color: "#c27d0e", label: "Balanced" },
+    { color: "#111111", label: "Sell-heavy" },
+    { color: "#c4a35a", label: "Buy-heavy" },
+    { color: "#8a8478", label: "Balanced" },
   ],
   volume: [
-    { color: "#bfdcd3", label: "1 txn" },
-    { color: "#7dbbab", label: "2–3" },
-    { color: "#3f9884", label: "4–7" },
-    { color: "#16705e", label: "8–14" },
-    { color: "#0b4a3e", label: "15+" },
+    { color: "#e8e0c8", label: "1 txn" },
+    { color: "#d4c08a", label: "2–3" },
+    { color: "#c4a35a", label: "4–7" },
+    { color: "#8a7340", label: "8–14" },
+    { color: "#111111", label: "15+" },
   ],
   recency: [
-    { color: "#0b4a3e", label: "Last 30 days" },
-    { color: "#3f9884", label: "31–90 days" },
-    { color: "#a9cfc4", label: "91–180 days" },
-    { color: "#c9d3ce", label: "Older" },
+    { color: "#111111", label: "Last 30 days" },
+    { color: "#c4a35a", label: "31–90 days" },
+    { color: "#d4c08a", label: "91–180 days" },
+    { color: "#c8c8c8", label: "Older" },
   ],
 };
 
@@ -92,7 +92,7 @@ export default function MapPanel({
                 aria-pressed={mode === m.id}
                 onClick={() => setMode(m.id)}
                 className={`h-8 rounded-lg px-3 transition ${
-                  mode === m.id ? "bg-tint text-brand-deep" : "text-[#4a5a53] hover:text-ink"
+                  mode === m.id ? "bg-tint text-ink" : "text-muted hover:text-ink"
                 }`}
               >
                 {m.label}
@@ -115,7 +115,7 @@ export default function MapPanel({
         {selected && (
           <div className="pointer-events-auto relative w-full rounded-[14px] bg-surface p-4 shadow-[0_8px_28px_rgba(16,32,26,0.22)] sm:w-[340px]">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#cfe7df] font-bold text-brand-deep">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-tint font-bold text-ink">
                 {selected.firstName[0]}
                 {selected.lastName[0] ?? ""}
               </div>
@@ -139,15 +139,15 @@ export default function MapPanel({
               <CloseIcon width={14} height={14} />
             </button>
             <div className="mt-3.5 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-lg bg-tint py-2">
-                <div className="text-base font-bold text-[#0b6558]">{selected.sellSide}</div>
+              <div className="rounded-lg bg-sunken py-2">
+                <div className="text-base font-bold text-ink">{selected.sellSide}</div>
                 <div className="text-[11px] text-ink2">Sell</div>
               </div>
-              <div className="rounded-lg bg-[#e8eefb] py-2">
-                <div className="text-base font-bold text-[#244fb8]">{selected.buySide}</div>
+              <div className="rounded-lg bg-tint py-2">
+                <div className="text-base font-bold text-ink">{selected.buySide}</div>
                 <div className="text-[11px] text-ink2">Buy</div>
               </div>
-              <div className="rounded-lg bg-background py-2">
+              <div className="rounded-lg bg-sunken py-2">
                 <div className="text-base font-bold">{selected.zipsActive}</div>
                 <div className="text-[11px] text-ink2">ZIPs</div>
               </div>

@@ -20,10 +20,10 @@ if (!canvasProto.__guarded) {
   canvasProto.__guarded = true;
 }
 
-const SIDE_COLOR = { sell: "#0f7b6c", buy: "#2f5fd0", balanced: "#c27d0e" } as const;
-const VOLUME_RAMP = ["#bfdcd3", "#7dbbab", "#3f9884", "#16705e", "#0b4a3e"];
-const RECENCY_RAMP = ["#0b4a3e", "#3f9884", "#a9cfc4", "#c9d3ce"];
-const SELECTED_FILL = "#f2b632";
+const SIDE_COLOR = { sell: "#111111", buy: "#c4a35a", balanced: "#8a8478" } as const;
+const VOLUME_RAMP = ["#e8e0c8", "#d4c08a", "#c4a35a", "#8a7340", "#111111"];
+const RECENCY_RAMP = ["#111111", "#c4a35a", "#d4c08a", "#c8c8c8"];
+const SELECTED_FILL = "#fdf2d0";
 
 export function volumeColor(total: number): string {
   if (total >= 15) return VOLUME_RAMP[4];
@@ -146,12 +146,12 @@ export default function AgentMap({
     if (!map) return;
     areaRef.current?.remove();
     const area = L.polygon(marketOutline(market), {
-      color: "#0f5c4d",
+      color: "#111111",
       weight: 1.5,
       dashArray: "6 6",
-      opacity: 0.6,
-      fillColor: "#0f5c4d",
-      fillOpacity: 0.04,
+      opacity: 0.45,
+      fillColor: "#c4a35a",
+      fillOpacity: 0.06,
       interactive: false,
     }).addTo(map);
     areaRef.current = area;
@@ -191,7 +191,7 @@ export default function AgentMap({
     const sel = selectedRef.current;
     const m = sel ? markersRef.current.get(sel) : undefined;
     if (m) {
-      m.setStyle({ fillColor: SELECTED_FILL, color: "#10201a", weight: 2.5, fillOpacity: 1 });
+      m.setStyle({ fillColor: SELECTED_FILL, color: "#111111", weight: 2.5, fillOpacity: 1 });
       m.setRadius(radiusFor(agentsRef.current.get(sel!)!) + 4);
       m.bringToFront();
     }
@@ -220,7 +220,7 @@ export default function AgentMap({
     const marker = markersRef.current.get(selectedId);
     const agent = agentsRef.current.get(selectedId);
     if (!marker || !agent || !map) return;
-    marker.setStyle({ fillColor: SELECTED_FILL, color: "#10201a", weight: 2.5, fillOpacity: 1 });
+    marker.setStyle({ fillColor: SELECTED_FILL, color: "#111111", weight: 2.5, fillOpacity: 1 });
     marker.setRadius(radiusFor(agent) + 4);
     marker.bringToFront();
     if (!map.getBounds().pad(-0.15).contains(marker.getLatLng())) {

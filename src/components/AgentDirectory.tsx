@@ -116,7 +116,7 @@ export default function AgentDirectory({
 
       {/* Small screens: switch between list and map */}
       <div className="flex shrink-0 items-center gap-2 border-b border-line bg-surface px-4 py-2.5 lg:hidden">
-        <div className="flex flex-1 rounded-[10px] bg-[#e8eeea] p-[3px] text-sm font-semibold" role="group" aria-label="View">
+        <div className="flex flex-1 rounded-[10px] bg-sunken p-[3px] text-sm font-semibold" role="group" aria-label="View">
           {(["list", "map"] as const).map((v) => (
             <button
               key={v}
@@ -124,7 +124,7 @@ export default function AgentDirectory({
               aria-pressed={mobileView === v}
               onClick={() => setMobileView(v)}
               className={`h-9 flex-1 rounded-lg transition ${
-                mobileView === v ? "bg-surface text-brand shadow-sm" : "text-[#4a5a53]"
+                mobileView === v ? "bg-tint text-ink shadow-sm" : "text-muted"
               }`}
             >
               {v === "list" ? `List · ${filtered.length.toLocaleString()}` : "Map"}
@@ -173,15 +173,15 @@ export default function AgentDirectory({
             onToggleAll={toggleAll}
           />
 
-          <div className="flex shrink-0 flex-col gap-2 border-t border-[#2a3c34] bg-ink px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-white">
+          <div className="flex shrink-0 flex-col gap-2 border-t border-[#2a2a2a] bg-ink px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-white">
             {selectedInView.length > 0 && (
               <div className="text-[13.5px]">
                 <b>{selectedInView.length.toLocaleString()} selected</b>{" "}
-                <span className="text-[#a9bbb2]">of {filtered.length.toLocaleString()}</span>
+                <span className="text-[#b0b0b0]">of {filtered.length.toLocaleString()}</span>
                 <button
                   type="button"
                   onClick={() => setSelectedIds(new Set())}
-                  className="ml-2.5 text-[13px] text-[#a9bbb2] underline hover:text-white"
+                  className="ml-2.5 text-[13px] text-[#b0b0b0] underline hover:text-white"
                 >
                   Clear
                 </button>
@@ -191,7 +191,7 @@ export default function AgentDirectory({
               type="button"
               onClick={() => setExporting(true)}
               disabled={exportSource.length === 0}
-              className="flex h-[38px] w-full items-center justify-center gap-2 rounded-[9px] bg-white px-4 text-[13.5px] font-bold text-brand-deep hover:bg-tint disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-[38px] w-full items-center justify-center gap-2 rounded-[9px] bg-tint px-4 text-[13.5px] font-bold text-ink hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
             >
               <DownloadIcon strokeWidth={2.4} />
               {selectedInView.length > 0 ? "Export selected" : "Export all"}{" "}

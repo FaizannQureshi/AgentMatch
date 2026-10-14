@@ -46,7 +46,7 @@ const AgentRow = memo(function AgentRow({
       >
         <div
           className={`hidden h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold sm:flex ${
-            active ? "bg-[#cfe7df] text-brand-deep" : "bg-[#e8eeea] text-ink2"
+            active ? "bg-tint text-ink" : "bg-sunken text-ink2"
           }`}
         >
           {initials(agent.name)}
@@ -59,14 +59,14 @@ const AgentRow = memo(function AgentRow({
               <span className="ml-0.5 text-[11px] font-medium text-muted">txns</span>
             </p>
           </div>
-          <p className="mt-1 flex items-center gap-2 truncate text-[12.5px] text-[#4a5a53]">
+          <p className="mt-1 flex items-center gap-2 truncate text-[12.5px] text-muted">
             <span className="truncate">
               {agent.email || "No email"}
               {agent.phone ? ` · ${agent.phone}` : ""}
             </span>
             {agent.sharedEmail && (
               <span
-                className="shrink-0 rounded bg-[var(--am-warn-bg)] px-1.5 py-px text-[10.5px] font-bold tracking-wide text-[var(--am-warn-ink)]"
+                className="shrink-0 rounded bg-tint px-1.5 py-px text-[10.5px] font-bold tracking-wide text-[var(--am-warn-ink)]"
                 title="Another agent in this market uses the same email. A CRM import may merge them into one contact."
               >
                 SHARED EMAIL
@@ -82,10 +82,10 @@ const AgentRow = memo(function AgentRow({
           </div>
           <div className="mt-1.5 flex flex-wrap gap-x-3.5 gap-y-0.5 text-xs text-ink2">
             <span>
-              <b className="text-[#0b6558]">{agent.sellSide}</b> sell
+              <b className="text-ink">{agent.sellSide}</b> sell
             </span>
             <span>
-              <b className="text-[#244fb8]">{agent.buySide}</b> buy
+              <b className="text-gold">{agent.buySide}</b> buy
             </span>
             <span>
               {agent.zipsActive} ZIP{agent.zipsActive === 1 ? "" : "s"}

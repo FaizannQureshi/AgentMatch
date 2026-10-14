@@ -59,7 +59,7 @@ export default function Header({
         <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-brand text-[13px] font-bold tracking-wide text-white">
           AM
         </div>
-        <span className="font-[family-name:var(--font-display)] text-[21px] font-semibold tracking-tight">
+        <span className="text-[21px] font-semibold tracking-tight">
           AgentMatch
         </span>
       </div>
@@ -99,7 +99,7 @@ export default function Header({
         <div
           role="group"
           aria-label="Market scope"
-          className="flex rounded-[9px] bg-[#e8eeea] p-[3px] text-[13px] font-semibold"
+          className="flex rounded-[9px] bg-sunken p-[3px] text-[13px] font-semibold"
         >
           {city.markets.map((m) => {
             const on = m.id === market.id;
@@ -110,7 +110,7 @@ export default function Header({
                 aria-pressed={on}
                 onClick={() => onMarketChange(m.id)}
                 className={`h-[30px] whitespace-nowrap rounded-[7px] px-3 transition ${
-                  on ? "bg-surface text-brand shadow-sm" : "text-[#4a5a53] hover:text-ink"
+                  on ? "bg-tint text-ink shadow-sm" : "text-muted hover:text-ink"
                 }`}
               >
                 {m.scopeLabel}
@@ -121,8 +121,8 @@ export default function Header({
       </div>
 
       <div className="ml-auto flex items-center gap-3">
-        <div className="hidden items-center gap-2 text-[12.5px] text-[#4a5a53] xl:flex">
-          <span className="h-2 w-2 rounded-full bg-[#1e9e6b]" />
+        <div className="hidden items-center gap-2 text-[12.5px] text-muted xl:flex">
+          <span className="h-2 w-2 rounded-full bg-gold" />
           Vendor data through {formatDate(through)}
         </div>
         <button
