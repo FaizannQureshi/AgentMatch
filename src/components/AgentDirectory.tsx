@@ -173,15 +173,15 @@ export default function AgentDirectory({
             onToggleAll={toggleAll}
           />
 
-          <div className="flex shrink-0 flex-col gap-2 border-t border-[#2a2a2a] bg-ink px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-white">
+          <div className="flex shrink-0 flex-col gap-2 border-t border-line bg-surface px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {selectedInView.length > 0 && (
-              <div className="text-[13.5px]">
+              <div className="text-[13.5px] text-ink">
                 <b>{selectedInView.length.toLocaleString()} selected</b>{" "}
-                <span className="text-[#b0b0b0]">of {filtered.length.toLocaleString()}</span>
+                <span className="text-muted">of {filtered.length.toLocaleString()}</span>
                 <button
                   type="button"
                   onClick={() => setSelectedIds(new Set())}
-                  className="ml-2.5 text-[13px] text-[#b0b0b0] underline hover:text-white"
+                  className="ml-2.5 text-[13px] text-muted underline hover:text-ink"
                 >
                   Clear
                 </button>
@@ -191,7 +191,7 @@ export default function AgentDirectory({
               type="button"
               onClick={() => setExporting(true)}
               disabled={exportSource.length === 0}
-              className="flex h-[38px] w-full items-center justify-center gap-2 rounded-[9px] bg-tint px-4 text-[13.5px] font-bold text-ink hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-[38px] w-full items-center justify-center gap-2 rounded-[9px] border border-ink bg-tint px-4 text-[13.5px] font-bold text-ink hover:bg-[#f7e9b8] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <DownloadIcon strokeWidth={2.4} />
               {selectedInView.length > 0 ? "Export selected" : "Export all"}{" "}
