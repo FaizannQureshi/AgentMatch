@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 import type { ExportRecord } from "./types";
 
 /** Export log stored in this browser. Callers only depend on the ExportRecord shape. */
-const KEY = "agentmatch.exportLog.v1";
+const KEY = "ai-partnership.exportLog.v1";
 const MAX_RECORDS = 500;
 const EMPTY: ExportRecord[] = [];
 

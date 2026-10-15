@@ -8,7 +8,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "AgentMatch · Real Estate Agent Directory",
+  title: "AI Partnership Platform · Real Estate Agent Directory",
   description:
     "Browse active real estate agents by market. Filter by transactions, side focus, and export contacts.",
 };

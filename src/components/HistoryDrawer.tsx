@@ -60,7 +60,7 @@ export default function HistoryDrawer({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               disabled={log.length === 0}
-              onClick={() => downloadCsv("agentmatch-export-log.csv", logToCsv(log))}
+              onClick={() => downloadCsv("ai-partnership-export-log.csv", logToCsv(log))}
               className="h-[34px] rounded-lg border border-field bg-surface px-3 text-[13px] font-semibold hover:bg-background disabled:opacity-40"
             >
               Download log

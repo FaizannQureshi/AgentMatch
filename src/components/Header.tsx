@@ -56,11 +56,11 @@ export default function Header({
   return (
     <header className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-2.5 border-b border-line bg-surface px-4 py-3 lg:h-16 lg:flex-nowrap lg:px-6 lg:py-0">
       <div className="flex items-center gap-2.5">
-        <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-brand text-[13px] font-bold tracking-wide text-white">
-          AM
+        <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-brand text-[12px] font-bold tracking-wide text-white">
+          AI
         </div>
-        <span className="text-[21px] font-semibold tracking-tight">
-          AgentMatch
+        <span className="text-[18px] font-semibold tracking-tight sm:text-[21px]">
+          AI Partnership Platform
         </span>
       </div>
 

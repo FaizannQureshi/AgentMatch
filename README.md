@@ -1,4 +1,4 @@
-# AgentMatch
+# AI Partnership Platform
 
 Real estate agent directory for loan officers. Phase 1 prototype inspired by [Model Match](https://modelmatch.com/).
 

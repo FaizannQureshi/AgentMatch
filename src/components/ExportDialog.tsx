@@ -116,7 +116,7 @@ export default function ExportDialog({
     if (plan.agents.length === 0) return;
     const iso = new Date().toISOString().slice(0, 10);
     const csv = buildCsv(plan.agents, market, options, iso);
-    downloadCsv(`agentmatch-${market.id}-${options.format}-${iso}.csv`, csv);
+    downloadCsv(`ai-partnership-${market.id}-${options.format}-${iso}.csv`, csv);
     appendExport({
       marketId: market.id,
       marketLabel: market.label,
@@ -227,7 +227,7 @@ export default function ExportDialog({
                     checked={options.tagMarket}
                     onChange={(v) => set("tagMarket", v)}
                     title="Tag every contact with the market"
-                    hint={`Adds tags: agentmatch, ${market.city.toLowerCase()}-${market.state.toLowerCase()}, ${market.scopeLabel
+                    hint={`Adds tags: ai-partnership, ${market.city.toLowerCase()}-${market.state.toLowerCase()}, ${market.scopeLabel
                       .toLowerCase()
                       .replace(/\s+/g, "-")}, today's date`}
                   />

@@ -426,8 +426,8 @@ export function planExport(agents: Agent[], options: ExportOptions): ExportPlan 
 export function buildCsv(agents: Agent[], market: Market, options: ExportOptions, isoDate: string): string {
   if (options.format === "ghl") {
     const tags = options.tagMarket
-      ? ["agentmatch", `${market.city}-${market.state}`.toLowerCase(), market.scopeLabel.toLowerCase().replace(/\s+/g, "-"), isoDate].join(",")
-      : "agentmatch";
+      ? ["ai-partnership", `${market.city}-${market.state}`.toLowerCase(), market.scopeLabel.toLowerCase().replace(/\s+/g, "-"), isoDate].join(",")
+      : "ai-partnership";
     return Papa.unparse({
       fields: ["First Name", "Last Name", "Email", "Phone", "Tags", "City", "State"],
       data: agents.map((a) => [a.firstName, a.lastName, a.email, a.phone ? toE164(a.phone) : "", tags, a.city, a.state]),
