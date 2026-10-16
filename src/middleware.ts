@@ -12,7 +12,14 @@ function hostAllowed(referer: string) {
     .split(",")
     .map((h) => h.trim().toLowerCase())
     .filter(Boolean);
-  const suffixes = ["gohighlevel.com", "highlevel.com", "leadconnectorhq.com", "msgsndr.com", ...extras];
+  const suffixes = [
+    "gohighlevel.com",
+    "highlevel.com",
+    "leadconnectorhq.com",
+    "msgsndr.com",
+    "connectionincorporated.com",
+    ...extras,
+  ];
   return suffixes.some((suffix) => host === suffix || host.endsWith(`.${suffix}`));
 }
 
