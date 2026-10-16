@@ -36,6 +36,7 @@ yarn-error.log*
 
 # local activity log (production uses Postgres)
 /data/activity-log.jsonl
+/data/ghl-oauth.json
 
 # vercel
 .vercel

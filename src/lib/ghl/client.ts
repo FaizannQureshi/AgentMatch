@@ -1,17 +1,13 @@
+import { getAgencyToken, getLocationToken } from "./oauth";
+
 const API = "https://services.leadconnectorhq.com";
 const VERSION = "2021-07-28";
 
-function token() {
-  const value = process.env.GHL_AGENCY_TOKEN;
-  if (!value) throw new Error("GHL_AGENCY_TOKEN is not set");
-  return value;
-}
-
-async function ghl(path: string, init?: RequestInit) {
+async function ghl(path: string, bearer: string, init?: RequestInit) {
   const res = await fetch(`${API}${path}`, {
     ...init,
     headers: {
-      Authorization: `Bearer ${token()}`,
+      Authorization: `Bearer ${bearer}`,
       Version: VERSION,
       Accept: "application/json",
       ...(init?.body ? { "Content-Type": "application/json" } : {}),
@@ -36,7 +32,8 @@ async function ghl(path: string, init?: RequestInit) {
 }
 
 export async function verifyLocation(locationId: string): Promise<string> {
-  const data = await ghl(`/locations/${encodeURIComponent(locationId)}`);
+  const agency = await getAgencyToken();
+  const data = await ghl(`/locations/${encodeURIComponent(locationId)}`, agency.token);
   const location = (data.location as { name?: string; id?: string } | undefined) ?? data;
   const name = typeof location.name === "string" ? location.name : "";
   const id = typeof location.id === "string" ? location.id : locationId;
@@ -60,7 +57,8 @@ function toE164(phone: string) {
 }
 
 export async function upsertContact(locationId: string, contact: GhlContactInput) {
-  await ghl("/contacts/upsert", {
+  const bearer = await getLocationToken(locationId);
+  await ghl("/contacts/upsert", bearer, {
     method: "POST",
     body: JSON.stringify({
       locationId,
