@@ -41,12 +41,14 @@ export default function Header({
   onMarketChange,
   through,
   exportCount,
+  locationName,
   onOpenHistory,
 }: {
   market: Market;
   onMarketChange: (id: MarketId) => void;
   through: string;
   exportCount: number;
+  locationName: string;
   onOpenHistory: () => void;
 }) {
   const tree = marketTree();
@@ -123,6 +125,7 @@ export default function Header({
       <div className="ml-auto flex items-center gap-3">
         <div className="hidden items-center gap-2 text-[12.5px] text-muted xl:flex">
           <span className="h-2 w-2 rounded-full bg-gold" />
+          {locationName ? `${locationName} · ` : ""}
           Vendor data through {formatDate(through)}
         </div>
         <button

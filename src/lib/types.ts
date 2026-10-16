@@ -96,3 +96,34 @@ export interface ExportRecord {
   format: ExportFormat;
   filterSummary: string;
 }
+
+export type ActivityAction = "csv" | "import";
+
+export interface GhlSession {
+  locationId: string;
+  locationName: string;
+  userId: string;
+  userName: string;
+  email: string;
+  companyId: string;
+}
+
+export interface ActivityRecord {
+  id: string;
+  at: string;
+  locationId: string;
+  locationName: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  action: ActivityAction;
+  marketId: string;
+  marketLabel: string;
+  city: string;
+  stateCode: string;
+  count: number;
+  format: string;
+  filterSummary: string;
+  status: "ok" | "partial" | "failed";
+  detail: string;
+}

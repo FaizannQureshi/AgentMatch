@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildCsv, downloadCsv, planExport } from "@/lib/agents";
-import { appendExport } from "@/lib/exportLog";
-import type { Agent, ExportFormat, ExportOptions, Market } from "@/lib/types";
+import type { ActivityRecord, Agent, ExportFormat, ExportOptions, Market } from "@/lib/types";
 import { CheckCircle, CloseIcon, DownloadIcon, ShieldCheck } from "./Icons";
 
 const plural = (n: number) => (n === 1 ? "contact" : "contacts");
@@ -82,6 +81,7 @@ export default function ExportDialog({
   market,
   scopeLabel,
   filterSummary,
+  onLogged,
   onClose,
 }: {
   agents: Agent[];
@@ -89,10 +89,14 @@ export default function ExportDialog({
   /** Human description of what is being exported, e.g. "5+ transactions" or "2 selected agents". */
   scopeLabel: string;
   filterSummary: string;
+  onLogged: (record: ActivityRecord) => void;
   onClose: () => void;
 }) {
   const [options, setOptions] = useState<ExportOptions>(DEFAULTS);
   const [doneCount, setDoneCount] = useState<number | null>(null);
+  const [doneLabel, setDoneLabel] = useState("exported");
+  const [busy, setBusy] = useState<"csv" | "import" | null>(null);
+  const [error, setError] = useState("");
   const primaryRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -112,21 +116,103 @@ export default function ExportDialog({
     setOptions((o) => ({ ...o, [key]: value }));
   }
 
-  function download() {
-    if (plan.agents.length === 0) return;
-    const iso = new Date().toISOString().slice(0, 10);
-    const csv = buildCsv(plan.agents, market, options, iso);
-    downloadCsv(`ai-partnership-${market.id}-${options.format}-${iso}.csv`, csv);
-    appendExport({
-      marketId: market.id,
-      marketLabel: market.label,
-      stateCode: market.state,
-      city: market.city,
-      count: plan.agents.length,
-      format: options.format,
-      filterSummary: `${scopeLabel}${filterSummary !== "No filters" ? ` · ${filterSummary}` : ""}`,
+  const summary = `${scopeLabel}${filterSummary !== "No filters" ? ` · ${filterSummary}` : ""}`;
+
+  async function logAction(action: "csv" | "import", count: number, detail = "") {
+    const res = await fetch("/api/activity", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action,
+        marketId: market.id,
+        marketLabel: market.label,
+        city: market.city,
+        stateCode: market.state,
+        count,
+        format: options.format,
+        filterSummary: summary,
+        status: "ok",
+        detail,
+      }),
     });
-    setDoneCount(plan.agents.length);
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new Error(data.error || "Could not save the activity log");
+    }
+    const data = (await res.json()) as { record: ActivityRecord };
+    onLogged(data.record);
+  }
+
+  async function download() {
+    if (plan.agents.length === 0 || busy) return;
+    setBusy("csv");
+    setError("");
+    try {
+      await logAction("csv", plan.agents.length);
+      const iso = new Date().toISOString().slice(0, 10);
+      const csv = buildCsv(plan.agents, market, options, iso);
+      downloadCsv(`ai-partnership-${market.id}-${options.format}-${iso}.csv`, csv);
+      setDoneLabel("exported");
+      setDoneCount(plan.agents.length);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function importContacts() {
+    if (plan.agents.length === 0 || busy) return;
+    setBusy("import");
+    setError("");
+    try {
+      const iso = new Date().toISOString().slice(0, 10);
+      const tags = options.tagMarket
+        ? ["ai-partnership", `${market.city}-${market.state}`.toLowerCase(), market.scopeLabel.toLowerCase().replace(/\s+/g, "-"), iso]
+        : ["ai-partnership"];
+      let imported = 0;
+      let cursor = 0;
+      const queue = plan.agents;
+      while (cursor < queue.length) {
+        const slice = queue.slice(cursor, cursor + 40);
+        const res = await fetch("/api/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contacts: slice.map((agent) => ({
+              firstName: agent.firstName,
+              lastName: agent.lastName,
+              email: agent.email,
+              phone: agent.phone,
+              sharedEmail: agent.sharedEmail,
+            })),
+            skipSharedEmail: options.skipSharedEmail,
+            tags,
+            marketId: market.id,
+            marketLabel: market.label,
+            city: market.city,
+            stateCode: market.state,
+            filterSummary: summary,
+          }),
+        });
+        const data = (await res.json()) as {
+          imported?: number;
+          error?: string;
+          errors?: string[];
+          record?: ActivityRecord;
+        };
+        if (!res.ok) throw new Error(data.error || data.errors?.[0] || "Import failed");
+        if (data.record) onLogged(data.record);
+        imported += data.imported || 0;
+        cursor += slice.length;
+      }
+      setDoneLabel("imported");
+      setDoneCount(imported);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Import failed");
+    } finally {
+      setBusy(null);
+    }
   }
 
   return (
@@ -168,9 +254,11 @@ export default function ExportDialog({
         {doneCount !== null ? (
           <div className="flex flex-col items-center gap-3 px-8 py-12 text-center">
             <CheckCircle width={44} height={44} className="text-brand" />
-            <p className="text-lg font-bold">{doneCount.toLocaleString()} {plural(doneCount)} downloaded</p>
+            <p className="text-lg font-bold">
+              {doneCount.toLocaleString()} {plural(doneCount)} {doneLabel}
+            </p>
             <p className="max-w-sm text-sm text-muted">
-              The file is in your downloads folder and this export is saved to your export history.
+              This action is saved on this subaccount&apos;s activity log.
             </p>
             <button
               ref={primaryRef}
@@ -244,12 +332,13 @@ export default function ExportDialog({
 
             <div className="flex flex-wrap items-center gap-3 border-t border-soft bg-sunken px-6 py-4 sm:px-7">
               <div className="min-w-[180px] flex-1 text-[13px] text-ink2">
-                <b className="text-[15px] text-ink">{plan.agents.length.toLocaleString()} {plural(plan.agents.length)}</b> will be exported
+                <b className="text-[15px] text-ink">{plan.agents.length.toLocaleString()} {plural(plan.agents.length)}</b> ready
                 {plan.skippedShared + plan.skippedNoPhone > 0 && (
                   <span className="block text-xs text-muted">
                     {(plan.skippedShared + plan.skippedNoPhone).toLocaleString()} skipped by clean-up
                   </span>
                 )}
+                {error && <span className="mt-1 block text-xs text-[#7a4b00]">{error}</span>}
               </div>
               <button
                 type="button"
@@ -259,13 +348,21 @@ export default function ExportDialog({
                 Cancel
               </button>
               <button
-                ref={primaryRef}
                 type="button"
                 onClick={download}
-                disabled={plan.agents.length === 0}
+                disabled={plan.agents.length === 0 || busy !== null}
+                className="flex h-[42px] items-center gap-2 rounded-[10px] border border-ink bg-surface px-4 text-sm font-bold hover:bg-sunken disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <DownloadIcon /> {busy === "csv" ? "Saving…" : "Download CSV"}
+              </button>
+              <button
+                ref={primaryRef}
+                type="button"
+                onClick={importContacts}
+                disabled={plan.agents.length === 0 || busy !== null}
                 className="flex h-[42px] items-center gap-2 rounded-[10px] bg-brand px-5 text-sm font-bold text-white hover:bg-brand-deep disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <DownloadIcon /> Download CSV
+                {busy === "import" ? "Importing…" : "Import to CRM"}
               </button>
             </div>
           </>

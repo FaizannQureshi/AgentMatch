@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   activeFilters,
   DEFAULT_FILTERS,
@@ -9,9 +9,8 @@ import {
   filterAgents,
   summarize,
 } from "@/lib/agents";
-import { useExportLog } from "@/lib/exportLog";
 import { DEFAULT_MARKET_ID, getMarket } from "@/lib/markets";
-import type { Agent, AgentFilters, MarketId } from "@/lib/types";
+import type { ActivityRecord, Agent, AgentFilters, GhlSession, MarketId } from "@/lib/types";
 import AgentList from "./AgentList";
 import ExportDialog from "./ExportDialog";
 import FilterPanel from "./FilterPanel";
@@ -24,8 +23,10 @@ import StatsStrip from "./StatsStrip";
 const EMPTY: Agent[] = [];
 
 export default function AgentDirectory({
+  session,
   agentsByMarket,
 }: {
+  session: GhlSession;
   agentsByMarket: Record<MarketId, Agent[]>;
 }) {
   const [marketId, setMarketId] = useState<MarketId>(DEFAULT_MARKET_ID);
@@ -37,7 +38,14 @@ export default function AgentDirectory({
   const [desktopFiltersOpen, setDesktopFiltersOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const exportLog = useExportLog();
+  const [activity, setActivity] = useState<ActivityRecord[]>([]);
+
+  useEffect(() => {
+    fetch("/api/activity")
+      .then((res) => (res.ok ? res.json() : { records: [] }))
+      .then((data: { records?: ActivityRecord[] }) => setActivity(data.records ?? []))
+      .catch(() => setActivity([]));
+  }, []);
 
   const market = getMarket(marketId);
   const agents = agentsByMarket[marketId] ?? EMPTY;
@@ -109,7 +117,8 @@ export default function AgentDirectory({
         market={market}
         onMarketChange={changeMarket}
         through={through}
-        exportCount={exportLog.length}
+        exportCount={activity.length}
+        locationName={session.locationName}
         onOpenHistory={() => setHistoryOpen(true)}
       />
       <StatsStrip stats={stats} total={agents.length} />
@@ -194,8 +203,7 @@ export default function AgentDirectory({
               className="flex h-[38px] w-full items-center justify-center gap-2 rounded-[9px] border border-ink bg-tint px-4 text-[13.5px] font-bold text-ink hover:bg-[#f7e9b8] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <DownloadIcon strokeWidth={2.4} />
-              {selectedInView.length > 0 ? "Export selected" : "Export all"}{" "}
-              {exportSource.length.toLocaleString()}
+              Export or import {exportSource.length.toLocaleString()}
             </button>
           </div>
         </section>
@@ -222,10 +230,11 @@ export default function AgentDirectory({
           market={market}
           scopeLabel={exportScope}
           filterSummary={selectedInView.length > 0 ? describeFilters(filters) : "No filters"}
+          onLogged={(record) => setActivity((prev) => [record, ...prev])}
           onClose={() => setExporting(false)}
         />
       )}
-      {historyOpen && <HistoryDrawer onClose={() => setHistoryOpen(false)} />}
+      {historyOpen && <HistoryDrawer records={activity} onClose={() => setHistoryOpen(false)} />}
     </div>
   );
 }

@@ -21,12 +21,18 @@ Done in `src/lib/agents.ts` when the CSV is parsed:
 - Emails are lower-cased. Emails used by more than one agent are flagged "shared" because a CRM import may merge those contacts.
 - "Active in the last N days" counts back from the newest transaction in the file, not today's date.
 
-## Later
+## Phase 2 (CRM sidebar)
 
-- Subaccount access control
-- Direct CRM import
-- Per-user export logging on the server
-- Automated vendor data feed (API)
+The directory loads only after a GoHighLevel subaccount session. A bare URL shows a locked screen.
+
+Two ways in:
+
+- Custom menu link (iframe) with `key`, `location_id`, and user merge fields. The app checks the request came from a CRM iframe, then confirms the location with the agency token.
+- Marketplace custom page SSO (`REQUEST_USER_DATA` + shared secret).
+
+Exports and imports are written to `activity_log` for that location only. Import uses `POST /contacts/upsert` on the same subaccount.
+
+See `.env.example` for the keys this needs.
 
 ## Data approach
 
