@@ -38,7 +38,7 @@ function clientConfig() {
 }
 
 export function redirectUri() {
-  return process.env.GHL_REDIRECT_URI || "https://agentmatch-six.vercel.app/api/auth/ghl/callback";
+  return process.env.GHL_REDIRECT_URI || "https://agentmatch-six.vercel.app/api/auth/crm/callback";
 }
 
 export function installUrl() {
