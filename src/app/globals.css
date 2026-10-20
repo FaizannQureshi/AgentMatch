@@ -67,6 +67,13 @@ body > div {
   min-height: 0;
 }
 
+/* Parent CRM chrome can sit flush on the iframe top edge; keep a little air so
+   the first row of controls is not clipped. */
+html[data-embed="crm"] body {
+  padding-top: 10px;
+  box-sizing: border-box;
+}
+
 button,
 select,
 input {

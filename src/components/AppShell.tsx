@@ -32,6 +32,11 @@ export default function AppShell() {
   const [agentsByMarket, setAgentsByMarket] = useState<Record<MarketId, Agent[]> | null>(null);
 
   useEffect(() => {
+    const embedded = window.self !== window.top;
+    document.documentElement.dataset.embed = embedded ? "crm" : "solo";
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function boot() {
