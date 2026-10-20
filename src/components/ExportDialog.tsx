@@ -95,6 +95,7 @@ export default function ExportDialog({
   const [options, setOptions] = useState<ExportOptions>(DEFAULTS);
   const [doneCount, setDoneCount] = useState<number | null>(null);
   const [doneLabel, setDoneLabel] = useState("exported");
+  const [doneNote, setDoneNote] = useState("");
   const [busy, setBusy] = useState<"csv" | "import" | null>(null);
   const [error, setError] = useState("");
   const primaryRef = useRef<HTMLButtonElement>(null);
@@ -154,6 +155,11 @@ export default function ExportDialog({
       downloadCsv(`ai-partnership-${market.id}-${options.format}-${iso}.csv`, csv);
       setDoneLabel("exported");
       setDoneCount(plan.agents.length);
+      setDoneNote(
+        plan.skippedShared + plan.skippedNoPhone > 0
+          ? `${plan.skippedShared + plan.skippedNoPhone} skipped by clean-up options.`
+          : "",
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Export failed");
     } finally {
@@ -171,6 +177,8 @@ export default function ExportDialog({
         ? ["ai-partnership", `${market.city}-${market.state}`.toLowerCase(), market.scopeLabel.toLowerCase().replace(/\s+/g, "-"), iso]
         : ["ai-partnership"];
       let imported = 0;
+      let failed = 0;
+      const failureNotes: string[] = [];
       let cursor = 0;
       const queue = plan.agents;
       while (cursor < queue.length) {
@@ -197,6 +205,7 @@ export default function ExportDialog({
         });
         const data = (await res.json()) as {
           imported?: number;
+          failed?: number;
           error?: string;
           errors?: string[];
           record?: ActivityRecord;
@@ -208,10 +217,19 @@ export default function ExportDialog({
           throw new Error(data.error || data.errors?.[0] || "Import failed for every contact");
         }
         imported += batchImported;
+        failed += data.failed || 0;
+        if (data.errors?.length) failureNotes.push(...data.errors);
         cursor += slice.length;
       }
+      const skipped = plan.skippedShared + plan.skippedNoPhone;
+      const notes = [
+        skipped > 0 ? `${skipped} skipped by clean-up (shared inbox / no phone).` : "",
+        failed > 0 ? `${failed} failed: ${failureNotes[0] || "see export history"}` : "",
+        `In Contacts, search the email or filter by tag “${tags[0]}”.`,
+      ].filter(Boolean);
       setDoneLabel("imported");
       setDoneCount(imported);
+      setDoneNote(notes.join(" "));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Import failed");
     } finally {
@@ -264,6 +282,7 @@ export default function ExportDialog({
             <p className="max-w-sm text-sm text-muted">
               This action is saved on this subaccount&apos;s activity log.
             </p>
+            {doneNote && <p className="max-w-md text-sm leading-relaxed text-ink2">{doneNote}</p>}
             <button
               ref={primaryRef}
               type="button"

@@ -58,7 +58,7 @@ function toE164(phone: string) {
 
 export async function upsertContact(locationId: string, contact: GhlContactInput) {
   const bearer = await getLocationToken(locationId);
-  await ghl("/contacts/upsert", bearer, {
+  const data = await ghl("/contacts/upsert", bearer, {
     method: "POST",
     body: JSON.stringify({
       locationId,
@@ -66,8 +66,16 @@ export async function upsertContact(locationId: string, contact: GhlContactInput
       lastName: contact.lastName,
       email: contact.email || undefined,
       phone: contact.phone ? toE164(contact.phone) : undefined,
-      tags: contact.tags,
+      tags: contact.tags.length ? contact.tags : undefined,
       source: "AI Partnership Platform",
     }),
   });
+  const saved = data.contact as { id?: string; locationId?: string } | undefined;
+  if (!saved?.id) {
+    throw new Error("CRM accepted the request but did not return a contact id");
+  }
+  if (saved.locationId && saved.locationId !== locationId) {
+    throw new Error(`Contact landed in a different subaccount (${saved.locationId})`);
+  }
+  return saved.id;
 }
