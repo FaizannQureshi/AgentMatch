@@ -10,10 +10,12 @@ export async function GET(request: Request) {
   }
   try {
     const saved = await saveAuthorizationCode(code);
+    // Without Postgres, HighLevel refresh-token rotation only survives the current
+    // serverless instance. Always show the token so it can be written to Vercel env.
     const persistNote = process.env.DATABASE_URL
-      ? "<p>You can close this tab.</p>"
-      : `<p>Send this refresh token so it can be stored on the server. It is shown once.</p><pre>${saved.refreshToken}</pre>`;
-    const html = `<!doctype html><html><body style="font-family:sans-serif;padding:40px">
+      ? "<p>Tokens are stored in the database. You can close this tab.</p>"
+      : `<p><b>Important:</b> copy this refresh token into <code>GHL_REFRESH_TOKEN</code> on Vercel (and .env.local). HighLevel rotates it; without a database the env value must stay current or imports fail.</p><pre style="white-space:pre-wrap;word-break:break-all">${saved.refreshToken}</pre>`;
+    const html = `<!doctype html><html><body style="font-family:sans-serif;padding:40px;max-width:720px">
       <h1>Agency app connected</h1>
       <p>Imports can now run in every subaccount${saved.companyId ? ` for company ${saved.companyId}` : ""}.</p>
       ${persistNote}

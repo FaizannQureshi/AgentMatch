@@ -38,6 +38,20 @@ export async function POST(request: Request) {
   const contacts = (body.contacts || []).filter((c) => (c.email || c.phone) && !(body.skipSharedEmail && c.sharedEmail));
   const batch = contacts.slice(0, CHUNK);
 
+  if (batch.length === 0) {
+    return NextResponse.json(
+      {
+        error: "No contacts left to import after clean-up filters. Turn off “Skip shared team inboxes” or pick agents with email/phone.",
+        imported: 0,
+        failed: 0,
+        remaining: 0,
+        errors: [],
+        status: "failed",
+      },
+      { status: 400 },
+    );
+  }
+
   let imported = 0;
   const failures: string[] = [];
   for (const contact of batch) {
@@ -58,6 +72,7 @@ export async function POST(request: Request) {
   }
 
   const status = imported === 0 ? "failed" : failures.length ? "partial" : "ok";
+  const detail = failures.slice(0, 3).join(" | ");
   const record = await recordActivity({
     locationId: session.locationId,
     locationName: session.locationName,
@@ -73,8 +88,26 @@ export async function POST(request: Request) {
     format: "ghl",
     filterSummary: body.filterSummary || "",
     status,
-    detail: failures.slice(0, 3).join(" | "),
+    detail,
   });
+
+  const authExpired = failures.some((f) => /invalid_grant|expired|unauthorized|install the agency/i.test(f));
+  if (imported === 0) {
+    return NextResponse.json(
+      {
+        error: authExpired
+          ? "Agency CRM connection expired. Reinstall the app at /api/auth/crm/start, then try again."
+          : detail || "Import failed for every contact",
+        imported: 0,
+        failed: failures.length,
+        remaining: Math.max(0, contacts.length - batch.length),
+        errors: failures.slice(0, 3),
+        status,
+        record,
+      },
+      { status: authExpired ? 401 : 502 },
+    );
+  }
 
   return NextResponse.json({
     imported,

@@ -203,7 +203,11 @@ export default function ExportDialog({
         };
         if (!res.ok) throw new Error(data.error || data.errors?.[0] || "Import failed");
         if (data.record) onLogged(data.record);
-        imported += data.imported || 0;
+        const batchImported = data.imported || 0;
+        if (batchImported === 0) {
+          throw new Error(data.error || data.errors?.[0] || "Import failed for every contact");
+        }
+        imported += batchImported;
         cursor += slice.length;
       }
       setDoneLabel("imported");

@@ -177,21 +177,34 @@ async function agencyAccessToken(): Promise<{ token: string; companyId: string }
     return { token: stored.accessToken, companyId: stored.companyId || process.env.GHL_COMPANY_ID || "" };
   }
   const { clientId, clientSecret } = clientConfig();
-  const data = await tokenRequest(
-    new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      grant_type: "refresh_token",
-      refresh_token: stored.refreshToken,
-      user_type: "Company",
-    }),
-  );
+  let data;
+  try {
+    data = await tokenRequest(
+      new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        grant_type: "refresh_token",
+        refresh_token: stored.refreshToken,
+        user_type: "Company",
+      }),
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Token refresh failed";
+    if (/invalid_grant|invalid token|expired/i.test(message)) {
+      throw new Error(
+        "Agency CRM connection expired. Reinstall at /api/auth/crm/start and store the new refresh token.",
+      );
+    }
+    throw err;
+  }
   const next: StoredAuth = {
     refreshToken: data.refresh_token || stored.refreshToken,
     accessToken: data.access_token,
     accessExpiresAt: Date.now() + (data.expires_in ?? 3600) * 1000 - 60_000,
     companyId: data.companyId || stored.companyId || process.env.GHL_COMPANY_ID,
   };
+  // Keep the in-process env mirror in sync when HighLevel rotates the refresh token.
+  if (next.refreshToken) process.env.GHL_REFRESH_TOKEN = next.refreshToken;
   await writeStored(next);
   return { token: data.access_token!, companyId: next.companyId || "" };
 }
