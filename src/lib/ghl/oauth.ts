@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 
 const API = "https://services.leadconnectorhq.com";
-const AUTH = "https://marketplace.gohighlevel.com/oauth/chooselocation";
+const AUTH = "https://marketplace.gohighlevel.com/v2/oauth/chooselocation";
 const SCOPES = [
   "contacts.readonly",
   "contacts.write",
@@ -43,11 +43,16 @@ export function redirectUri() {
 
 export function installUrl() {
   const { clientId } = clientConfig();
+  // Marketplace client ids look like "{appId}-{suffix}". The install URL needs both
+  // client_id and version_id (the app/version id before the suffix).
+  const versionId =
+    process.env.GHL_APP_VERSION_ID || clientId.split("-")[0] || clientId;
   const params = new URLSearchParams({
     response_type: "code",
     redirect_uri: redirectUri(),
     client_id: clientId,
     scope: SCOPES,
+    version_id: versionId,
   });
   return `${AUTH}?${params.toString()}`;
 }
