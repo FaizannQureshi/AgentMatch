@@ -8,7 +8,7 @@ export default function AccessGate({
   message?: string;
 }) {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-background px-6 text-ink">
+    <div className="flex h-full min-h-0 items-center justify-center bg-background px-6 text-ink">
       <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-8 shadow-sm">
         <div className="flex h-11 w-11 items-center justify-center rounded-[10px] bg-brand text-sm font-bold text-white">
           AI

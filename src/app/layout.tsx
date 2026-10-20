@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${manrope.variable} h-full antialiased`}>
-      <body className="min-h-full font-sans">{children}</body>
+    <html lang="en" className={`${manrope.variable} h-full overflow-hidden antialiased`}>
+      <body className="h-full overflow-hidden font-sans">{children}</body>
     </html>
   );
 }
