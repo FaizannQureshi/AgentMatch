@@ -3,17 +3,26 @@ import { getAgencyToken, getLocationToken } from "./oauth";
 const API = "https://services.leadconnectorhq.com";
 const VERSION = "2021-07-28";
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function ghl(path: string, bearer: string, init?: RequestInit) {
-  const res = await fetch(`${API}${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${bearer}`,
-      Version: VERSION,
-      Accept: "application/json",
-      ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      ...init?.headers,
-    },
-  });
+  let res: Response;
+  for (let attempt = 0; ; attempt += 1) {
+    res = await fetch(`${API}${path}`, {
+      ...init,
+      headers: {
+        Authorization: `Bearer ${bearer}`,
+        Version: VERSION,
+        Accept: "application/json",
+        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        ...init?.headers,
+      },
+    });
+    // HighLevel allows ~100 requests per 10 seconds per subaccount. Back off and retry.
+    if (res.status !== 429 || attempt >= 4) break;
+    const retryAfter = Number(res.headers.get("retry-after"));
+    await sleep(retryAfter > 0 ? retryAfter * 1000 : 1500 * (attempt + 1));
+  }
   const text = await res.text();
   let body: unknown = null;
   try {
@@ -63,6 +72,7 @@ type ContactRow = {
   id?: string;
   locationId?: string;
   email?: string;
+  tags?: string[];
   deleted?: boolean;
 };
 
@@ -132,6 +142,7 @@ async function createContact(
       lastName: contact.lastName,
       email: contact.email || undefined,
       phone: phone || undefined,
+      tags: contact.tags.length ? contact.tags : undefined,
       source: "AI Partnership Platform",
     }),
   });
@@ -183,14 +194,20 @@ export async function upsertContact(locationId: string, contact: GhlContactInput
   if (email) {
     const visible = await searchVisibleByEmail(bearer, locationId, email);
     if (visible?.id) {
+      // Search returns the contact's current tags, so merge them into the same PUT
+      // (PUT replaces tags) instead of a second tags call.
+      const known = Array.isArray(visible.tags);
       await updateContact(bearer, visible.id, {
         firstName: contact.firstName,
         lastName: contact.lastName,
         email,
         phone: phone || undefined,
         source: "AI Partnership Platform",
+        ...(known && contact.tags.length
+          ? { tags: Array.from(new Set([...(visible.tags || []), ...contact.tags])) }
+          : {}),
       });
-      await addTags(bearer, visible.id, contact.tags);
+      if (!known) await addTags(bearer, visible.id, contact.tags);
       return visible.id;
     }
   }
@@ -199,7 +216,6 @@ export async function upsertContact(locationId: string, contact: GhlContactInput
     const created = await createContact(bearer, locationId, contact, phone);
     const row = asContact(created);
     if (!row?.id) throw new Error("CRM create did not return a contact id");
-    await addTags(bearer, row.id, contact.tags);
     return row.id;
   } catch (err) {
     const ghostId = duplicateContactId(err);
@@ -240,15 +256,28 @@ export async function upsertContact(locationId: string, contact: GhlContactInput
     }
     await addTags(bearer, row.id!, contact.tags);
 
-    if (email) {
-      const visible = await searchVisibleByEmail(bearer, locationId, email);
-      if (!visible) {
-        throw new Error(
-          "CRM still has this email on a deleted contact. Restore it under Contacts → ⋮ → Restore, or permanently remove it from trash, then import again.",
-        );
-      }
-      return visible.id!;
+    // Read the record itself: the Contacts search index lags writes by seconds to
+    // minutes, so a just-written contact can be missing from search but fine here.
+    const final = await getContact(bearer, row.id!);
+    if (!final || final.deleted === true) {
+      throw new Error(
+        "CRM still has this email on a deleted contact. Restore it under Contacts → ⋮ → Restore, or permanently remove it from trash, then import again.",
+      );
     }
-    return row.id!;
+    return final.id || row.id!;
   }
+}
+
+/** How many of these emails the Contacts list (search index) already shows. */
+export async function countVisible(locationId: string, emails: string[]) {
+  const bearer = await getLocationToken(locationId);
+  const hits = await Promise.all(
+    emails.map((email) =>
+      searchVisibleByEmail(bearer, locationId, email.trim().toLowerCase()).then(
+        (row) => Boolean(row),
+        () => false,
+      ),
+    ),
+  );
+  return hits.filter(Boolean).length;
 }

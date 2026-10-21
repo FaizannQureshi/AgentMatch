@@ -1,11 +1,12 @@
 import { randomUUID } from "crypto";
 import { appendFile, mkdir, readFile } from "fs/promises";
 import path from "path";
+import { db } from "@/lib/db";
 import type { ActivityRecord } from "@/lib/types";
 
 type NewActivity = Omit<ActivityRecord, "id" | "at">;
 
-const globalStore = globalThis as unknown as { activitySql?: import("postgres").Sql };
+let tableReady: Promise<void> | null = null;
 
 function filePath() {
   if (process.env.VERCEL) return path.join("/tmp", "activity-log.jsonl");
@@ -28,12 +29,10 @@ async function readFileLog(locationId: string): Promise<ActivityRecord[]> {
 }
 
 async function sqlClient() {
-  const url = process.env.DATABASE_URL;
-  if (!url) return null;
-  if (!globalStore.activitySql) {
-    const postgres = (await import("postgres")).default;
-    globalStore.activitySql = postgres(url, { ssl: "require", max: 1 });
-    await globalStore.activitySql`
+  const sql = await db();
+  if (!sql) return null;
+  tableReady ??= (async () => {
+    await sql`
       create table if not exists activity_log (
         id text primary key,
         at timestamptz not null default now(),
@@ -54,11 +53,15 @@ async function sqlClient() {
         detail text not null default ''
       )
     `;
-    await globalStore.activitySql`
+    await sql`
       create index if not exists activity_location_idx on activity_log (location_id, at desc)
     `;
-  }
-  return globalStore.activitySql;
+  })().catch((err) => {
+    tableReady = null;
+    throw err;
+  });
+  await tableReady;
+  return sql;
 }
 
 function rowToRecord(row: Record<string, unknown>): ActivityRecord {

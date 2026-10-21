@@ -1,5 +1,7 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
+import type { Sql, TransactionSql } from "postgres";
+import { db } from "@/lib/db";
 
 const API = "https://services.leadconnectorhq.com";
 const AUTH = "https://marketplace.gohighlevel.com/v2/oauth/chooselocation";
@@ -57,53 +59,26 @@ export function installUrl() {
   return `${AUTH}?${params.toString()}`;
 }
 
-async function readStored(): Promise<StoredAuth | null> {
-  if (cache.ghlAuth?.refreshToken) return cache.ghlAuth;
-  const url = process.env.DATABASE_URL;
-  if (url) {
-    const postgres = (await import("postgres")).default;
-    const sql = postgres(url, { ssl: "require", max: 1 });
-    const rows = await sql<{ refresh_token: string; access_token: string | null; access_expires_at: string | null; company_id: string | null }[]>`
-      select refresh_token, access_token, access_expires_at, company_id from ghl_oauth where id = 'agency'
-    `.catch(() => []);
-    await sql.end();
-    const row = rows[0];
-    if (row?.refresh_token) {
-      const stored = {
-        refreshToken: row.refresh_token,
-        accessToken: row.access_token || undefined,
-        accessExpiresAt: row.access_expires_at ? Number(row.access_expires_at) : undefined,
-        companyId: row.company_id || process.env.GHL_COMPANY_ID,
-      };
-      cache.ghlAuth = stored;
-      return stored;
-    }
-  }
-  try {
-    const parsed = JSON.parse(await readFile(tokenFile(), "utf8")) as StoredAuth;
-    if (parsed.refreshToken) {
-      cache.ghlAuth = parsed;
-      return parsed;
-    }
-  } catch {
-    // No file yet.
-  }
-  const fromEnv = process.env.GHL_REFRESH_TOKEN;
-  if (!fromEnv) return null;
-  return { refreshToken: fromEnv, companyId: process.env.GHL_COMPANY_ID };
+type OauthRow = {
+  refresh_token: string;
+  access_token: string | null;
+  access_expires_at: string | null;
+  company_id: string | null;
+};
+
+function rowToStored(row: OauthRow): StoredAuth {
+  return {
+    refreshToken: row.refresh_token,
+    accessToken: row.access_token || undefined,
+    accessExpiresAt: row.access_expires_at ? Number(row.access_expires_at) : undefined,
+    companyId: row.company_id || process.env.GHL_COMPANY_ID,
+  };
 }
 
-async function writeStored(next: StoredAuth) {
-  cache.ghlAuth = next;
-  const file = tokenFile();
-  await mkdir(path.dirname(file), { recursive: true });
-  await writeFile(file, JSON.stringify(next), "utf8");
+let tableReady: Promise<void> | null = null;
 
-  const url = process.env.DATABASE_URL;
-  if (!url) return;
-  const postgres = (await import("postgres")).default;
-  const sql = postgres(url, { ssl: "require", max: 1 });
-  await sql`
+async function ensureTable(sql: Sql) {
+  tableReady ??= sql`
     create table if not exists ghl_oauth (
       id text primary key,
       refresh_token text not null,
@@ -112,7 +87,14 @@ async function writeStored(next: StoredAuth) {
       company_id text,
       updated_at timestamptz not null default now()
     )
-  `;
+  `.then(() => undefined, (err) => {
+    tableReady = null;
+    throw err;
+  });
+  return tableReady;
+}
+
+async function upsertRow(sql: Sql | TransactionSql, next: StoredAuth) {
   await sql`
     insert into ghl_oauth (id, refresh_token, access_token, access_expires_at, company_id)
     values ('agency', ${next.refreshToken}, ${next.accessToken ?? null}, ${next.accessExpiresAt ?? null}, ${next.companyId ?? null})
@@ -123,7 +105,57 @@ async function writeStored(next: StoredAuth) {
       company_id = excluded.company_id,
       updated_at = now()
   `;
-  await sql.end();
+}
+
+async function readFileOrEnv(): Promise<StoredAuth | null> {
+  try {
+    const parsed = JSON.parse(await readFile(tokenFile(), "utf8")) as StoredAuth;
+    if (parsed.refreshToken) return parsed;
+  } catch {
+    // No file yet.
+  }
+  const fromEnv = process.env.GHL_REFRESH_TOKEN;
+  if (!fromEnv) return null;
+  return { refreshToken: fromEnv, companyId: process.env.GHL_COMPANY_ID };
+}
+
+async function readStored(): Promise<StoredAuth | null> {
+  if (cache.ghlAuth?.refreshToken) return cache.ghlAuth;
+  const sql = await db();
+  if (sql) {
+    await ensureTable(sql);
+    const rows = await sql<OauthRow[]>`
+      select refresh_token, access_token, access_expires_at, company_id from ghl_oauth where id = 'agency'
+    `;
+    if (rows[0]?.refresh_token) {
+      cache.ghlAuth = rowToStored(rows[0]);
+      return cache.ghlAuth;
+    }
+  }
+  const fallback = await readFileOrEnv();
+  if (fallback) cache.ghlAuth = fallback;
+  return fallback;
+}
+
+async function writeFileStore(next: StoredAuth) {
+  const file = tokenFile();
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, JSON.stringify(next), "utf8");
+}
+
+async function writeStored(next: StoredAuth) {
+  cache.ghlAuth = next;
+  const sql = await db();
+  if (!sql) {
+    await writeFileStore(next);
+    return;
+  }
+  await ensureTable(sql);
+  await upsertRow(sql, next);
+}
+
+function accessValid(stored: StoredAuth | null | undefined): stored is StoredAuth & { accessToken: string } {
+  return Boolean(stored?.accessToken && stored.accessExpiresAt && stored.accessExpiresAt > Date.now());
 }
 
 async function tokenRequest(body: URLSearchParams) {
@@ -168,14 +200,11 @@ export async function saveAuthorizationCode(code: string) {
   return { companyId: data.companyId || "", refreshToken: data.refresh_token };
 }
 
-async function agencyAccessToken(): Promise<{ token: string; companyId: string }> {
-  const stored = await readStored();
-  if (!stored) {
-    throw new Error("Install the agency app before importing. An agency private integration cannot create contacts.");
-  }
-  if (stored.accessToken && stored.accessExpiresAt && stored.accessExpiresAt > Date.now()) {
-    return { token: stored.accessToken, companyId: stored.companyId || process.env.GHL_COMPANY_ID || "" };
-  }
+function asAgency(stored: StoredAuth & { accessToken: string }) {
+  return { token: stored.accessToken, companyId: stored.companyId || process.env.GHL_COMPANY_ID || "" };
+}
+
+async function refreshAgency(stored: StoredAuth): Promise<StoredAuth & { accessToken: string }> {
   const { clientId, clientSecret } = clientConfig();
   let data;
   try {
@@ -197,16 +226,50 @@ async function agencyAccessToken(): Promise<{ token: string; companyId: string }
     }
     throw err;
   }
-  const next: StoredAuth = {
+  return {
     refreshToken: data.refresh_token || stored.refreshToken,
-    accessToken: data.access_token,
+    accessToken: data.access_token!,
     accessExpiresAt: Date.now() + (data.expires_in ?? 3600) * 1000 - 60_000,
     companyId: data.companyId || stored.companyId || process.env.GHL_COMPANY_ID,
   };
-  // Keep the in-process env mirror in sync when HighLevel rotates the refresh token.
-  if (next.refreshToken) process.env.GHL_REFRESH_TOKEN = next.refreshToken;
-  await writeStored(next);
-  return { token: data.access_token!, companyId: next.companyId || "" };
+}
+
+const NOT_INSTALLED =
+  "Install the agency app before importing. An agency private integration cannot create contacts.";
+
+async function agencyAccessToken(): Promise<{ token: string; companyId: string }> {
+  if (accessValid(cache.ghlAuth)) return asAgency(cache.ghlAuth);
+
+  const sql = await db();
+  if (!sql) {
+    // No database: single-instance best effort (local dev).
+    const stored = await readStored();
+    if (!stored) throw new Error(NOT_INSTALLED);
+    if (accessValid(stored)) return asAgency(stored);
+    const next = await refreshAgency(stored);
+    if (next.refreshToken) process.env.GHL_REFRESH_TOKEN = next.refreshToken;
+    await writeStored(next);
+    return asAgency(next);
+  }
+
+  // HighLevel refresh tokens are single-use. Every server instance must read the
+  // latest one from the database and refresh under a row lock, or a second
+  // instance refreshes with a token that was already rotated and gets invalid_grant.
+  await ensureTable(sql);
+  const next = await sql.begin(async (tx) => {
+    const rows = await tx<OauthRow[]>`
+      select refresh_token, access_token, access_expires_at, company_id
+      from ghl_oauth where id = 'agency' for update
+    `;
+    const stored = rows[0]?.refresh_token ? rowToStored(rows[0]) : await readFileOrEnv();
+    if (!stored) throw new Error(NOT_INSTALLED);
+    if (accessValid(stored)) return stored;
+    const refreshed = await refreshAgency(stored);
+    await upsertRow(tx, refreshed);
+    return refreshed;
+  });
+  cache.ghlAuth = next;
+  return asAgency(next);
 }
 
 export async function getAgencyToken() {
@@ -224,18 +287,26 @@ export async function getLocationToken(locationId: string) {
   const hit = cache.ghlLocationTokens.get(locationId);
   if (hit && hit.exp > Date.now()) return hit.token;
 
-  const agency = await agencyAccessToken();
-  if (!agency.companyId) throw new Error("GHL_COMPANY_ID is missing");
-  const res = await fetch(`${API}/oauth/locationToken`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${agency.token}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-      Accept: "application/json",
-      Version: "2021-07-28",
-    },
-    body: new URLSearchParams({ companyId: agency.companyId, locationId }),
-  });
+  const request = async () => {
+    const agency = await agencyAccessToken();
+    if (!agency.companyId) throw new Error("GHL_COMPANY_ID is missing");
+    return fetch(`${API}/oauth/locationToken`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${agency.token}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+        Version: "2021-07-28",
+      },
+      body: new URLSearchParams({ companyId: agency.companyId, locationId }),
+    });
+  };
+  let res = await request();
+  if (res.status === 401) {
+    // Another instance may have rotated the agency token; drop ours and reload it.
+    cache.ghlAuth = undefined;
+    res = await request();
+  }
   const data = (await res.json()) as { access_token?: string; expires_in?: number; message?: string };
   if (!res.ok || !data.access_token) {
     throw new Error(data.message || "Could not open this subaccount for contact import");

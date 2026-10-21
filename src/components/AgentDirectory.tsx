@@ -227,6 +227,7 @@ export default function AgentDirectory({
       {exporting && (
         <ExportDialog
           agents={exportSource}
+          locationId={session.locationId}
           market={market}
           scopeLabel={exportScope}
           filterSummary={selectedInView.length > 0 ? describeFilters(filters) : "No filters"}

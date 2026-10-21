@@ -7,6 +7,19 @@ import { CheckCircle, CloseIcon, DownloadIcon, ShieldCheck } from "./Icons";
 
 const plural = (n: number) => (n === 1 ? "contact" : "contacts");
 
+type Readiness = "checking" | "ready" | "slow" | null;
+
+/** The CRM page that embeds this app, so "Open Contacts" lands on the same (white-label) domain. */
+function crmOrigin() {
+  const ancestor = window.location.ancestorOrigins?.[0];
+  if (ancestor) return ancestor;
+  try {
+    return document.referrer ? new URL(document.referrer).origin : "";
+  } catch {
+    return "";
+  }
+}
+
 const DEFAULTS: ExportOptions = {
   format: "ghl",
   skipSharedEmail: true,
@@ -78,6 +91,7 @@ function Option({
 
 export default function ExportDialog({
   agents,
+  locationId,
   market,
   scopeLabel,
   filterSummary,
@@ -85,6 +99,7 @@ export default function ExportDialog({
   onClose,
 }: {
   agents: Agent[];
+  locationId: string;
   market: Market;
   /** Human description of what is being exported, e.g. "5+ transactions" or "2 selected agents". */
   scopeLabel: string;
@@ -98,7 +113,17 @@ export default function ExportDialog({
   const [doneNote, setDoneNote] = useState("");
   const [busy, setBusy] = useState<"csv" | "import" | null>(null);
   const [error, setError] = useState("");
+  const [readiness, setReadiness] = useState<Readiness>(null);
+  const [contactsUrl, setContactsUrl] = useState("");
+  const alive = useRef(true);
   const primaryRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     primaryRef.current?.focus();
@@ -167,6 +192,36 @@ export default function ExportDialog({
     }
   }
 
+  /**
+   * HighLevel's Contacts list reads a search index that trails API writes by
+   * seconds to a couple of minutes. Poll a sample until it shows up there.
+   */
+  async function waitForContacts(emails: string[]) {
+    if (emails.length === 0) return;
+    setReadiness("checking");
+    const deadline = Date.now() + 90_000;
+    while (alive.current && Date.now() < deadline) {
+      try {
+        const res = await fetch("/api/import/ready", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emails }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { visible: number; checked: number };
+          if (data.checked > 0 && data.visible >= data.checked) {
+            if (alive.current) setReadiness("ready");
+            return;
+          }
+        }
+      } catch {
+        // Network blip; try again on the next tick.
+      }
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    }
+    if (alive.current) setReadiness("slow");
+  }
+
   async function importContacts() {
     if (plan.agents.length === 0 || busy) return;
     setBusy("import");
@@ -178,6 +233,8 @@ export default function ExportDialog({
         : ["ai-partnership"];
       let imported = 0;
       let failed = 0;
+      let skippedNoContact = 0;
+      let sample: string[] = [];
       const failureNotes: string[] = [];
       let cursor = 0;
       const queue = plan.agents;
@@ -206,30 +263,40 @@ export default function ExportDialog({
         const data = (await res.json()) as {
           imported?: number;
           failed?: number;
+          skipped?: number;
           error?: string;
           errors?: string[];
           record?: ActivityRecord;
         };
-        if (!res.ok) throw new Error(data.error || data.errors?.[0] || "Import failed");
         if (data.record) onLogged(data.record);
         const batchImported = data.imported || 0;
-        if (batchImported === 0) {
-          throw new Error(data.error || data.errors?.[0] || "Import failed for every contact");
-        }
         imported += batchImported;
+        if (!res.ok || batchImported === 0) {
+          const reason = data.error || data.errors?.[0] || "Import failed";
+          throw new Error(imported > 0 ? `${imported.toLocaleString()} imported, then it stopped: ${reason}` : reason);
+        }
         failed += data.failed || 0;
+        skippedNoContact += data.skipped || 0;
+        // The last emails written are the last to reach the Contacts index.
+        sample = [...sample, ...slice.map((agent) => agent.email).filter(Boolean)].slice(-5);
         if (data.errors?.length) failureNotes.push(...data.errors);
         cursor += slice.length;
       }
-      const skipped = plan.skippedShared + plan.skippedNoPhone;
+      const skipped = plan.skippedShared + plan.skippedNoPhone + skippedNoContact;
       const notes = [
-        skipped > 0 ? `${skipped} skipped by clean-up (shared inbox / no phone).` : "",
+        skipped > 0 ? `${skipped} skipped by clean-up (shared inbox / no phone / no email or phone).` : "",
         failed > 0 ? `${failed} failed: ${failureNotes[0] || "see export history"}` : "",
         `In Contacts, search the email or filter by tag “${tags[0]}”.`,
       ].filter(Boolean);
       setDoneLabel("imported");
       setDoneCount(imported);
       setDoneNote(notes.join(" "));
+      const origin = crmOrigin();
+      if (origin && locationId !== "preview") {
+        setContactsUrl(`${origin}/v2/location/${encodeURIComponent(locationId)}/contacts/smart_list/All`);
+      }
+      setBusy(null);
+      await waitForContacts(sample);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Import failed");
     } finally {
@@ -283,14 +350,46 @@ export default function ExportDialog({
               This action is saved on this subaccount&apos;s activity log.
             </p>
             {doneNote && <p className="max-w-md text-sm leading-relaxed text-ink2">{doneNote}</p>}
-            <button
-              ref={primaryRef}
-              type="button"
-              onClick={onClose}
-              className="mt-2 h-10 rounded-[10px] bg-brand px-5 text-sm font-bold text-white hover:bg-brand-deep"
-            >
-              Done
-            </button>
+            {readiness && (
+              <p
+                role="status"
+                className="flex max-w-md items-center gap-2 rounded-lg bg-sunken px-3 py-2 text-[13px] leading-relaxed text-ink2"
+              >
+                {readiness === "checking" && (
+                  <>
+                    <span className="h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+                    Waiting for the CRM to list them in Contacts. This usually takes under a minute.
+                  </>
+                )}
+                {readiness === "ready" && (
+                  <>
+                    <CheckCircle width={16} height={16} className="shrink-0 text-brand" />
+                    Ready in Contacts. Reload the Contacts page if it was already open.
+                  </>
+                )}
+                {readiness === "slow" && "Saved in the CRM. Contacts is still catching up, so reload it in a minute or two."}
+              </p>
+            )}
+            <div className="mt-2 flex flex-wrap justify-center gap-2.5">
+              {doneLabel === "imported" && contactsUrl && (
+                <a
+                  href={contactsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-10 items-center rounded-[10px] border border-ink bg-surface px-5 text-sm font-bold hover:bg-sunken"
+                >
+                  Open Contacts
+                </a>
+              )}
+              <button
+                ref={primaryRef}
+                type="button"
+                onClick={onClose}
+                className="h-10 rounded-[10px] bg-brand px-5 text-sm font-bold text-white hover:bg-brand-deep"
+              >
+                Done
+              </button>
+            </div>
           </div>
         ) : (
           <>
